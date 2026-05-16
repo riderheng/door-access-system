@@ -8,6 +8,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import Home from "./pages/Home";
 import StudentAccess from "./pages/StudentAccess";
 import AdminDashboard from "./pages/AdminDashboard";
+import ESP32Simulator from "./pages/ESP32Simulator";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/access" component={StudentAccess} />
         <Route path="/admin" component={AdminDashboard} />
+        <Route path="/simulator" component={ESP32Simulator} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

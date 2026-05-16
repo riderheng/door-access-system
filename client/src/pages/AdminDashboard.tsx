@@ -22,6 +22,7 @@ import {
   Search, Plus, UserX, UserCheck, GraduationCap,
   Download, RefreshCw, Send, Eye, CheckCircle2,
   Pencil, Shield, ClipboardList, Trash2, Clock,
+  LockOpen, Lock, DoorOpen,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -268,6 +269,26 @@ export default function AdminDashboard() {
   const nonAdminUsers = (userList ?? []).filter(u =>
     !(adminList ?? []).some(a => a.id === u.id)
   );
+
+  // ── Door Control state ──
+  const [doorCommandLoading, setDoorCommandLoading] = useState<string | null>(null);
+  const sendDoorCommandMutation = trpc.doorControl.sendCommand.useMutation();
+  const { data: pendingCommands, refetch: refetchPending } = trpc.doorControl.getPendingCommands.useQuery(
+    undefined, { refetchInterval: 3000 }
+  );
+
+  const handleDoorCommand = async (roomId: string, command: "unlock" | "lock") => {
+    setDoorCommandLoading(`${roomId}-${command}`);
+    try {
+      await sendDoorCommandMutation.mutateAsync({ roomId, command });
+      toast.success(command === "unlock" ? `ส่งคำสั่งปลดล็อค ${roomId} แล้ว` : `ส่งคำสั่งล็อค ${roomId} แล้ว`);
+      refetchPending();
+    } catch (e) {
+      toast.error("ส่งคำสั่งไม่สำเร็จ");
+    } finally {
+      setDoorCommandLoading(null);
+    }
+  };
 
   // ── Audit Log state ──
   const [auditSubTab, setAuditSubTab] = useState<"audit" | "activity">("audit");
@@ -787,6 +808,62 @@ export default function AdminDashboard() {
                   >
                     {savingDay === -1 ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />กำลังบันทึก...</> : "บันทึกทั้งหมด"}
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+            {/* Door Control */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DoorOpen className="h-5 w-5" />
+                  ควบคุมประตูแบบ Manual
+                </CardTitle>
+                <CardDescription>ส่งคำสั่งล็อค/ปลดล็อคไปยัง ESP32 ที่ประตูแต่ละห้อง (หมดอายุใน 30 วินาที)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {ROOMS.map(roomId => {
+                    const pending = (pendingCommands ?? []).find(c => c.roomId === roomId);
+                    return (
+                      <div key={roomId} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{roomId.replace("_", " ").toUpperCase()}</span>
+                          {pending ? (
+                            <Badge className={pending.command === "unlock" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                              {pending.command === "unlock" ? "รอปลดล็อค" : "รอล็อค"}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">ไม่มีคำสั่งรอ</Badge>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                            disabled={doorCommandLoading !== null}
+                            onClick={() => handleDoorCommand(roomId, "unlock")}
+                          >
+                            {doorCommandLoading === `${roomId}-unlock`
+                              ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              : <LockOpen className="h-3 w-3 mr-1" />}
+                            ปลดล็อค
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+                            disabled={doorCommandLoading !== null}
+                            onClick={() => handleDoorCommand(roomId, "lock")}
+                          >
+                            {doorCommandLoading === `${roomId}-lock`
+                              ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              : <Lock className="h-3 w-3 mr-1" />}
+                            ล็อค
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

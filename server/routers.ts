@@ -9,6 +9,7 @@ import { adminManagementRouter } from "./routers/adminManagement";
 import { auditLogViewerRouter } from "./routers/auditLogViewer";
 import { mockESP32Router } from "./routers/mockESP32";
 import { notificationsRouter } from "./routers/notifications";
+import { doorControlRouter } from "./routers/doorControl";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -31,6 +32,7 @@ export const appRouter = router({
   auditLogs: auditLogViewerRouter,
   mockESP32: mockESP32Router,
   notifications: notificationsRouter,
+  doorControl: doorControlRouter,
 });
 
 export type AppRouter = typeof appRouter;
