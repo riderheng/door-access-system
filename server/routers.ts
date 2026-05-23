@@ -7,7 +7,6 @@ import { accessRouter } from "./routers/access";
 import { adminRouter } from "./routers/admin";
 import { adminManagementRouter } from "./routers/adminManagement";
 import { auditLogViewerRouter } from "./routers/auditLogViewer";
-import { mockESP32Router } from "./routers/mockESP32";
 import { notificationsRouter } from "./routers/notifications";
 import { doorControlRouter } from "./routers/doorControl";
 
@@ -30,7 +29,6 @@ export const appRouter = router({
   admin: adminRouter,
   adminManagement: adminManagementRouter,
   auditLogs: auditLogViewerRouter,
-  mockESP32: mockESP32Router,
   notifications: notificationsRouter,
   doorControl: doorControlRouter,
 });

@@ -9,7 +9,6 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { consumeCommand } from "../doorCommandStore";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -50,16 +49,6 @@ async function startServer() {
       res.redirect(302, "/");
     });
   }
-
-  // ESP32 polling endpoint — consume pending door command for a room
-  app.get("/api/esp32/command/:roomId", (req, res) => {
-    const cmd = consumeCommand(req.params.roomId);
-    if (cmd) {
-      res.json({ command: cmd.command });
-    } else {
-      res.json({ command: null });
-    }
-  });
 
   // tRPC API
   app.use(

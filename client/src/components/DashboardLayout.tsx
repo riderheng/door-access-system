@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Home, DoorOpen, ShieldCheck, LogOut, PanelLeft, Cpu } from "lucide-react";
+import { Home, DoorOpen, ShieldCheck, LogOut, PanelLeft } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -31,7 +31,6 @@ const ALL_MENU_ITEMS = [
   { icon: Home, label: "หน้าหลัก", path: "/", adminOnly: false },
   { icon: DoorOpen, label: "ควบคุมการเข้าออก", path: "/access", adminOnly: false },
   { icon: ShieldCheck, label: "จัดการระบบ", path: "/admin", adminOnly: true },
-  { icon: Cpu, label: "ESP32 Simulator", path: "/simulator", adminOnly: true },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
