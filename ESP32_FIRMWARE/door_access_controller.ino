@@ -312,15 +312,14 @@ void sendDoorStatus(const char* status) {
   if (!isWiFiConnected) return;
   HTTPClient http;
   char url[256];
-  snprintf(url, sizeof(url), "%s/api/trpc/mockESP32.updateDoorStatus", BACKEND_URL);
+  snprintf(url, sizeof(url), "%s/api/trpc/access.updateDoorStatus", BACKEND_URL);
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(3000);
 
   StaticJsonDocument<256> doc;
-  doc["input"]["roomId"]       = ROOM_ID;
-  doc["input"]["sensorStatus"] = status;
-  doc["input"]["reason"]       = "Reed Switch MC-38";
+  doc["roomId"] = ROOM_ID;
+  doc["status"] = status;
   String payload; serializeJson(doc, payload);
   http.POST(payload);
   http.end();
@@ -330,15 +329,14 @@ void sendDoorLeftOpenAlert() {
   if (!isWiFiConnected) return;
   HTTPClient http;
   char url[256];
-  snprintf(url, sizeof(url), "%s/api/trpc/mockESP32.updateDoorStatus", BACKEND_URL);
+  snprintf(url, sizeof(url), "%s/api/trpc/access.updateDoorStatus", BACKEND_URL);
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(3000);
 
   StaticJsonDocument<256> doc;
-  doc["input"]["roomId"]       = ROOM_ID;
-  doc["input"]["sensorStatus"] = "error";
-  doc["input"]["reason"]       = "ประตูไม่ปิดสนิทหลังครบเวลา";
+  doc["roomId"] = ROOM_ID;
+  doc["status"] = "error";
   String payload; serializeJson(doc, payload);
   http.POST(payload);
   http.end();
@@ -376,7 +374,7 @@ void syncOfflineData() {
       if (!deserializeJson(doc, file) && !doc["synced"].as<bool>()) {
         HTTPClient http;
         char url[256];
-        snprintf(url, sizeof(url), "%s/api/trpc/mockESP32.recordOfflineExit", BACKEND_URL);
+        snprintf(url, sizeof(url), "%s/api/trpc/access.recordOfflineExit", BACKEND_URL);
         http.begin(url);
         http.addHeader("Content-Type", "application/json");
         http.setTimeout(3000);

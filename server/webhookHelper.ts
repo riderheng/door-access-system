@@ -1,4 +1,5 @@
 import axios from "axios";
+import nodemailer, { type Transporter } from "nodemailer";
 
 export type WebhookType = "line" | "telegram" | "email" | "slack";
 
@@ -98,21 +99,101 @@ export async function sendSlackNotification(
   }
 }
 
+let cachedTransporter: Transporter | null = null;
+
+function getMailTransporter(): Transporter | null {
+  if (cachedTransporter) return cachedTransporter;
+
+  const host = process.env.SMTP_HOST;
+  const port = process.env.SMTP_PORT;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!host || !port || !user || !pass) {
+    return null;
+  }
+
+  cachedTransporter = nodemailer.createTransport({
+    host,
+    port: Number(port),
+    secure: Number(port) === 465,
+    auth: { user, pass },
+  });
+
+  return cachedTransporter;
+}
+
 /**
- * Send email notification
+ * Send email notification via SMTP (nodemailer)
+ * ต้องตั้งค่า SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM ใน .env.local
  */
 export async function sendEmailNotification(
   email: string,
   payload: WebhookPayload
 ): Promise<boolean> {
+  const transporter = getMailTransporter();
+  if (!transporter) {
+    console.warn(
+      "[Webhook] Email skipped — SMTP env vars not set (SMTP_HOST/PORT/USER/PASS)"
+    );
+    return false;
+  }
+
   try {
-    // TODO: Implement email sending using your email service (e.g., SendGrid, Mailgun)
-    console.log("[Webhook] Email notification sent to:", email);
+    const from = process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@example.com";
+    const { subject, text, html } = formatEmailMessage(payload);
+    await transporter.sendMail({ from, to: email, subject, text, html });
     return true;
   } catch (error) {
     console.error("[Webhook] Email notification failed:", error);
     return false;
   }
+}
+
+function formatEmailMessage(payload: WebhookPayload): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const emoji =
+    payload.severity === "error"
+      ? "🚨"
+      : payload.severity === "warning"
+        ? "⚠️"
+        : "ℹ️";
+  const subject = `${emoji} [Door Access] ${payload.eventType}`;
+  const text = [
+    payload.message,
+    "",
+    `Student: ${payload.studentName || "N/A"}`,
+    `Room: ${payload.roomId || "N/A"}`,
+    `Time: ${payload.timestamp}`,
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: -apple-system, sans-serif; max-width: 560px;">
+      <h2 style="margin: 0 0 8px;">${emoji} ${escapeHtml(payload.eventType)}</h2>
+      <p style="font-size: 15px; line-height: 1.6; white-space: pre-line;">${escapeHtml(payload.message)}</p>
+      <table style="margin-top: 16px; font-size: 14px; border-collapse: collapse;">
+        <tr><td style="padding: 4px 12px 4px 0; color: #555;"><b>Student</b></td><td>${escapeHtml(payload.studentName || "N/A")}</td></tr>
+        <tr><td style="padding: 4px 12px 4px 0; color: #555;"><b>Room</b></td><td>${escapeHtml(payload.roomId || "N/A")}</td></tr>
+        <tr><td style="padding: 4px 12px 4px 0; color: #555;"><b>Time</b></td><td>${escapeHtml(payload.timestamp)}</td></tr>
+      </table>
+      <p style="margin-top: 24px; font-size: 12px; color: #999;">
+        ระบบควบคุมการเข้าใช้ห้องเรียน — RMUTP คณะครุศาสตร์
+      </p>
+    </div>
+  `;
+  return { subject, text, html };
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 /**

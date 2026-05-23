@@ -292,7 +292,7 @@ void sendToBackend(int studentId, const char* roomId, const char* reason) {
   HTTPClient http;
   
   // สร้าง URL สำหรับ API endpoint
-  String apiURL = backendURL + "/api/trpc/mockESP32.recordOfflineExit";
+  String apiURL = backendURL + "/api/trpc/access.recordOfflineExit";
   
   Serial.print("📤 Sending to: ");
   Serial.println(apiURL);
@@ -300,12 +300,12 @@ void sendToBackend(int studentId, const char* roomId, const char* reason) {
   http.begin(apiURL);
   http.addHeader("Content-Type", "application/json");
 
-  // สร้าง JSON payload
+  // สร้าง JSON payload (tRPC HTTP link รับ input ที่ root ของ body)
   StaticJsonDocument<512> doc;
-  doc["input"]["studentId"] = studentId;
-  doc["input"]["roomId"] = roomId;
-  doc["input"]["reason"] = reason;
-  doc["input"]["timestamp"] = time(nullptr);
+  doc["studentId"] = studentId;
+  doc["roomId"]    = roomId;
+  doc["reason"]    = reason;
+  doc["timestamp"] = time(nullptr);
 
   String payload;
   serializeJson(doc, payload);

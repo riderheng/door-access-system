@@ -236,4 +236,50 @@ export const accessRouter = router({
         });
       }
     }),
+
+  /**
+   * Record offline exit (from PWA / ESP32 sync queue)
+   * บันทึกการออกห้องที่เกิดในโหมดออฟไลน์ เมื่อ client หรือ ESP32 sync กลับมา
+   */
+  recordOfflineExit: publicProcedure
+    .input(
+      z.object({
+        studentId: z.number(),
+        roomId: z.string(),
+        reason: z.string().optional(),
+        timestamp: z.coerce.date().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const student = await getStudentById(input.studentId);
+        if (!student) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Student not found",
+          });
+        }
+
+        await createAccessLog({
+          studentId: input.studentId,
+          roomId: input.roomId,
+          accessType: "exit",
+          isOfflineSync: true,
+          status: "success",
+          notes: input.reason ?? "Offline mode exit",
+          timestamp: input.timestamp ?? new Date(),
+        });
+
+        return { success: true, syncedAt: new Date() };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        console.error("[Access] Failed to record offline exit:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to record offline exit",
+        });
+      }
+    }),
 });

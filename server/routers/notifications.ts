@@ -9,6 +9,23 @@ import { sendWebhookNotification } from "../webhookHelper";
 
 const notificationTypeEnum = z.enum(["line", "telegram", "slack", "email"]);
 
+const destinationSchema = z
+  .object({
+    notificationType: notificationTypeEnum,
+    webhookUrl: z.string().min(1),
+  })
+  .refine(
+    ({ notificationType, webhookUrl }) =>
+      notificationType === "email"
+        ? z.string().email().safeParse(webhookUrl).success
+        : z.string().url().safeParse(webhookUrl).success,
+    {
+      message:
+        "Email type ต้องเป็นที่อยู่อีเมล, ส่วนชนิดอื่นต้องเป็น URL ที่ถูกต้อง",
+      path: ["webhookUrl"],
+    }
+  );
+
 export const notificationsRouter = router({
   getSettings: adminProcedure.query(async ({ ctx }) => {
     return await getNotificationSettingsByAdmin(ctx.user.id);
@@ -17,11 +34,23 @@ export const notificationsRouter = router({
   upsertSetting: adminProcedure
     .input(z.object({
       notificationType: notificationTypeEnum,
-      webhookUrl: z.string().url().nullable().optional(),
+      webhookUrl: z.string().nullable().optional(),
       isEnabled: z.boolean(),
       eventTypes: z.array(z.string()),
     }))
     .mutation(async ({ input, ctx }) => {
+      if (input.isEnabled && input.webhookUrl) {
+        const check = destinationSchema.safeParse({
+          notificationType: input.notificationType,
+          webhookUrl: input.webhookUrl,
+        });
+        if (!check.success) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: check.error.issues[0]?.message ?? "Invalid destination",
+          });
+        }
+      }
       await upsertNotificationSetting(
         ctx.user.id,
         input.notificationType,
@@ -33,10 +62,7 @@ export const notificationsRouter = router({
     }),
 
   testNotification: adminProcedure
-    .input(z.object({
-      notificationType: notificationTypeEnum,
-      webhookUrl: z.string().url(),
-    }))
+    .input(destinationSchema)
     .mutation(async ({ input }) => {
       const payload = {
         eventType: "TEST_NOTIFICATION",

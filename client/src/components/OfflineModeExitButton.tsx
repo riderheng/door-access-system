@@ -198,21 +198,22 @@ export default function OfflineModeExitButton({
       for (const item of queue) {
         try {
           if (item.type === "offline_exit") {
-            // ส่งข้อมูลการออกห้องไปยัง server
-            await fetch("/api/trpc/mockESP32.recordOfflineExit", {
+            const response = await fetch("/api/trpc/access.recordOfflineExit", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                input: {
-                  studentId: item.data.studentId,
-                  roomId: item.data.roomId,
-                  reason: item.data.reason,
-                  timestamp: new Date(item.data.timestamp),
-                },
+                studentId: item.data.studentId,
+                roomId: item.data.roomId,
+                reason: item.data.reason,
+                timestamp: item.data.timestamp,
               }),
             });
+
+            if (!response.ok) {
+              throw new Error(`Sync failed: HTTP ${response.status}`);
+            }
 
             syncedCount++;
           }
